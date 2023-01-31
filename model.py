@@ -3,10 +3,6 @@ import pickle
 import gzip
 import torch
 import io
-import requests
-import os
-
-print('doing something')
 
 class CPU_Unpickler(pickle.Unpickler):
     def find_class(self, module, name):
@@ -40,40 +36,39 @@ cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
 
 # search function
 def semantic_search(query, count):
-	# initial question embedding and search with bi encoder
-  question_embedding = bi_encoder.encode(query, convert_to_tensor=True)
-	
-  hits = util.semantic_search(question_embedding, corpus_embeddings, top_k=32 if count is None else count)
-  hits = hits[0]
+    # initial question embedding and search with bi encoder
+    question_embedding = bi_encoder.encode(query, convert_to_tensor=True)
 
-	# reordering using cross encoder
-  cross_inp = [[query,  df['sentence_str'][hit['corpus_id']]] for hit in hits]
-  cross_scores = cross_encoder.predict(cross_inp)
+    hits = util.semantic_search(question_embedding, corpus_embeddings, top_k=32 if count is None else count)
+    hits = hits[0]
 
-  for idx in range(len(cross_scores)):
-    hits[idx]['cross-score'] = cross_scores[idx]
+    # reordering using cross encoder
+    cross_inp = [[query,  df['sentence_str'][hit['corpus_id']]] for hit in hits]
+    cross_scores = cross_encoder.predict(cross_inp)
 
-  hits = sorted(hits, key=lambda x: x['cross-score'], reverse=True)
+    for idx in range(len(cross_scores)):
+      hits[idx]['cross-score'] = cross_scores[idx]
 
-	# formatting results
-  results = []
+    hits = sorted(hits, key=lambda x: x['cross-score'], reverse=True)
 
-  for hit in hits:
-    value = {
-				'id': hit['corpus_id'],
-        'passage': df['sentence_str'][hit['corpus_id']],
-        'author': df['author'][hit['corpus_id']],
-        'title': df['title'][hit['corpus_id']],
-        'school': df['school'][hit['corpus_id']],
-        'score': str(hit['cross-score'])
-    }
+    # formatting results
+    results = []
 
-    results.append(value)
+    for hit in hits:
+        value = {
+            'id': hit['corpus_id'],
+            'passage': df['sentence_str'][hit['corpus_id']],
+            'author': df['author'][hit['corpus_id']],
+            'title': df['title'][hit['corpus_id']],
+            'school': df['school'][hit['corpus_id']],
+            'score': str(hit['cross-score'])
+        }
+        results.append(value)
 
-  return results
+    return results
 
 def get_next(id, count):
-	return df['sentence_str'][id+1:id+count+1]
+    return df['sentence_str'][id+1:id+count+1]
 
 def get_prev(id, count):
-	return df['sentence_str'][id-count:id]
+    return df['sentence_str'][id-count:id]

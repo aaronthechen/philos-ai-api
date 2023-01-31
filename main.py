@@ -1,7 +1,5 @@
 from typing import Union
-
 from fastapi import FastAPI, Query
-
 from model import semantic_search, get_next, get_prev
 
 app = FastAPI()
